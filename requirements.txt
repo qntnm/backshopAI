@@ -1,0 +1,9 @@
+pdfplumber
+ollama
+fastapi
+uvicorn
+langchain_ollama
+langchain_core
+langchain_chroma
+langchain_community
+langchain_text_splitters
