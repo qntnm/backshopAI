@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- (Your existing head content) -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* (Your existing CSS styles) */
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background-color: #202123;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            color: #d1d5db; /* Light text for dark background */
+        }
+
+        .container {
+            text-align: center;
+            background-color: transparent;
+            width: 60%;
+            max-width: 700px;
+            padding: 30px;
+            border-radius: 12px;
+        }
+
+        .title {
+            color: #d1d5db;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .recordButton,
+        .stopRecordButton {
+            margin-top: 50px;
+            display: inline-block;
+            background-color: #10a37f; /* ChatGPT's greenish accent */
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 24px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: transform 0.2s ease, background-color 0.3s ease;
+        }
+
+        .recordButton:hover,
+        .stopRecordButton:hover {
+            transform: scale(1.05);
+            background-color: #0e8c6b;
+        }
+
+        .stopRecordButton {
+            background-color: #ef4444; /* Red for stop */
+        }
+
+        .stopRecordButton:hover {
+            background-color: #dc2626;
+        }
+
+        .outputText {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #40414f; /* Subtle background */
+            border: none;
+            border-radius: 8px;
+            min-height: 120px;
+            font-size: 16px;
+            color: #d1d5db;
+            box-shadow: inset 0px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+    <title>BackShopAI</title>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">BackShopAI</h1>
+        <!-- Made the output div contenteditable -->
+        <div id="output" class="outputText" contenteditable="true"></div>
+        <button id="startButton" class="recordButton">Ask a question</button>
+        <button id="stopRecordButton" class="stopRecordButton">Submit question</button>
+    </div>
+
+    <script>
+        const startButton = document.getElementById('startButton');
+        const stopRecordButton = document.getElementById('stopRecordButton');
+        const outputDiv = document.getElementById('output');
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+
+        recognition.interimResults = false;
+        recognition.continuous = true;
+
+        startButton.addEventListener('click', () => {
+            recognition.start();
+            startButton.disabled = true;
+            startButton.textContent = 'Recording...';
+        });
+
+        async function sendData(parameter) {
+            console.log(parameter);
+            try {
+                const response = await fetch('http://localhost:8000/query_llm', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    // Change 'input_string' to 'text'
+                    body: JSON.stringify({ text: parameter })
+                });
+                if (!response.ok) {
+                    // Extract detailed error message from the response
+                    const errorData = await response.json();
+                    throw new Error(`Error: ${response.statusText} - ${JSON.stringify(errorData.detail)}`);
+                }
+                const data = await response.json();
+
+                // alert(data.response);
+                // alert(data.sources);
+                console.log(data.response);
+                outputDiv.textContent = data.response;
+
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                outputDiv.textContent = "Error fetching data";
+            }
+        }
+
+        stopRecordButton.addEventListener('click', () => {
+            const result = outputDiv.textContent.trim();
+            recognition.stop();
+            startButton.disabled = false;
+            startButton.textContent = 'Ask a question';
+            // Do not clear the outputDiv here to allow users to see their input
+            sendData(result);
+        });
+
+        recognition.onresult = event => {
+            const result = event.results[event.results.length - 1][0].transcript;
+            outputDiv.textContent = result;
+        };
+
+        recognition.onend = () => {
+            startButton.disabled = false;
+            startButton.textContent = 'Ask a question';
+        };
+
+        recognition.onerror = event => {
+            console.error('Speech recognition error:', event.error);
+        };
+
+        recognition.onnomatch = () => {
+            console.log('No speech was recognized.');
+        };
+    </script>
+</body>
+</html>

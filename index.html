@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF.js Viewer</title>
+    <!-- Include PDF.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf_viewer.min.js"></script>
+</head>
+<body>
+    <div id="viewerContainer" style="width: 100%; height: 100vh;">
+        <canvas id="pdfCanvas"></canvas>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Corrected file path; change to a relative path if the PDF is served from a web server
+            const url = "./data/manuals/GOVPUB-D101-PURL-LPS37172.pdf";  // Place your PDF in the server directory
+
+            // Set up PDF.js worker
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js';
+
+            // Load the PDF document
+            pdfjsLib.getDocument(url).promise.then(pdfDoc => {
+                const canvas = document.getElementById('pdfCanvas');
+                const context = canvas.getContext('2d');
+
+                // Render the first page (for example)
+                pdfDoc.getPage(1).then(page => {
+                    const viewport = page.getViewport({ scale: 1 });
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    page.render({
+                        canvasContext: context,
+                        viewport: viewport
+                    });
+                });
+
+                console.log('PDF loaded and rendered');
+            }).catch(error => {
+                console.error('Error loading PDF:', error);
+            });
+        });
+    </script>
+</body>
+</html>
